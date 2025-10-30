@@ -135,18 +135,18 @@ All data persists in localStorage:
 - `assignments` - Assignment list
 - `students` - Student data with submissions
 
-## 🎯 Features Checklist
+##  Features Checklist
 
-- ✅ Role-based authentication (Student/Admin)
-- ✅ Student: View assignments, submit confirmation
-- ✅ Admin: Create/delete assignments, track submissions
-- ✅ Progress visualization (bars, percentages)
-- ✅ Responsive design (mobile to desktop)
-- ✅ LocalStorage persistence
-- ✅ Clean component architecture
-- ✅ Modern UI with animations
+-  Role-based authentication (Student/Admin)
+-  Student: View assignments, submit confirmation
+-  Admin: Create/delete assignments, track submissions
+-  Progress visualization (bars, percentages)
+-  Responsive design (mobile to desktop)
+-  LocalStorage persistence
+-  Clean component architecture
+-  Modern UI with animations
 
-## 🚢 Deployment
+##  Deployment
 
 ### Netlify
 ```bash
