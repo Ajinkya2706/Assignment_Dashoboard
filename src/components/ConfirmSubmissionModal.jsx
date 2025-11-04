@@ -13,7 +13,7 @@ export const ConfirmSubmissionModal = ({ show, onConfirm, onClose }) => {
         <div className="flex gap-3">
           <button
             onClick={onConfirm}
-            className="flex-1 bg-black hover:bg-gray-800 text-white py-3 rounded-xl font-medium transition-all duration-200"
+            className="flex-1 hover:bg-gray-800 text-white py-3 rounded-xl font-medium transition-all duration-200"
           >
             Yes, I've Submitted
           </button>

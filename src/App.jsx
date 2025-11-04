@@ -1,150 +1,61 @@
-import React, { useState, useEffect } from 'react';
-import { LoginScreen } from './components/LoginScreen';
-import { StudentDashboard } from './views/StudentDashboard';
-import { AdminDashboard } from './views/AdminDashboard';
-import { storage } from './utils/storage';
-import { MOCK_DATA } from './constants';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext.jsx'
+import { ToastProvider } from './components/ui/toast'
+import { ProtectedRoute } from './components/shared/ProtectedRoute'
+import { LoadingSpinner } from './components/shared/LoadingSpinner'
+import { AuthPage } from './views/auth/AuthPage'
+import { ProfessorDashboard } from './views/professor/ProfessorDashboard'
+import { StudentDashboard } from './views/student/StudentDashboard'
+import { useAuth } from './hooks/useAuth'
 
-const App = () => {
-  // State
-  const [user, setUser] = useState(null);
-  const [assignments, setAssignments] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [showConfirm, setShowConfirm] = useState(null);
-  const [showCreate, setShowCreate] = useState(false);
-  const [newAssignment, setNewAssignment] = useState({ 
-    title: '', 
-    description: '', 
-    dueDate: '', 
-    driveLink: '' 
-  });
+const AppContent = () => {
+  const { user, loading } = useAuth()
 
-  // Initialize data
-  useEffect(() => {
-    const storedUser = storage.get('user');
-    const storedAssignments = storage.get('assignments');
-    const storedStudents = storage.get('students');
-
-    if (storedUser) setUser(storedUser);
-    
-    if (storedAssignments) {
-      setAssignments(storedAssignments);
-    } else {
-      setAssignments(MOCK_DATA.assignments);
-      storage.set('assignments', MOCK_DATA.assignments);
-    }
-
-    if (storedStudents) {
-      setStudents(storedStudents);
-    } else {
-      setStudents(MOCK_DATA.students);
-      storage.set('students', MOCK_DATA.students);
-    }
-  }, []);
-
-  // Auth handlers
-  const login = (role, userId = null) => {
-    const userData = role === 'admin' 
-      ? { role: 'admin', name: 'Prof. Ram', email: 'Ram@university.edu' }
-      : students.find(s => s.id === userId);
-    setUser(userData);
-    storage.set('user', userData);
-  };
-
-  const logout = () => {
-    setUser(null);
-    storage.remove('user');
-  };
-
-  // Student handlers
-  const handleSubmitClick = (assignmentId) => {
-    setShowConfirm(assignmentId);
-  };
-
-  const handleSubmitConfirm = (assignmentId) => {
-    // find student position
-    const idx = students.findIndex(s => s.id === user.id);
-    if (idx === -1) return;
-
-    // clone array and student object to avoid mutating state
-    const updated = [...students];
-    const student = { ...updated[idx] };
-
-    // ensure submissions object exists and mark this assignment submitted
-    student.submissions = { ...(student.submissions || {}), [assignmentId]: true };
-
-    // put the updated student back into the array
-    updated[idx] = student;
-    setStudents(updated);
-    storage.set('students', updated);
-    
-    const updatedUser = updated.find(s => s.id === user.id);
-    setUser(updatedUser);
-    storage.set('user', updatedUser);
-    setShowConfirm(null);
-  };
-
-  // Admin handlers
-  const handleCreateClick = () => setShowCreate(true);
-
-  const handleCreate = () => {
-    const assignment = { 
-      ...newAssignment, 
-      id: Date.now(), 
-      createdBy: user.email 
-    };
-    const updated = [...assignments, assignment];
-    setAssignments(updated);
-    storage.set('assignments', updated);
-    setNewAssignment({ title: '', description: '', dueDate: '', driveLink: '' });
-    setShowCreate(false);
-  };
-
-  const handleDelete = (id) => {
-    const updated = assignments.filter(a => a.id !== id);
-    setAssignments(updated);
-    storage.set('assignments', updated);
-  };
-
-  const handleModalClose = () => {
-    setShowConfirm(null);
-    setShowCreate(false);
-  };
-
-  // Render
-  if (!user) {
-    return <LoginScreen students={students} onLogin={login} />;
-  }
-
-  if (user.role === 'admin') {
-    return (
-      <AdminDashboard
-        user={user}
-        assignments={assignments}
-        students={students}
-        showCreate={showCreate}
-        newAssignment={newAssignment}
-        onLogout={logout}
-        onCreateClick={handleCreateClick}
-        onAssignmentChange={setNewAssignment}
-        onCreate={handleCreate}
-        onModalClose={handleModalClose}
-        onDelete={handleDelete}
-      />
-    );
+  if (loading) {
+    return <LoadingSpinner />
   }
 
   return (
-    <StudentDashboard
-      user={user}
-      assignments={assignments}
-      showConfirm={showConfirm}
-      onLogout={logout}
-      onSubmitClick={handleSubmitClick}
-      onSubmitConfirm={handleSubmitConfirm}
-      onModalClose={handleModalClose}
-    />
-  );
-};
+    <Routes>
+      <Route 
+        path="/auth" 
+        element={!user ? <AuthPage /> : <Navigate to="/" replace />} 
+      />
+      <Route
+        path="/professor/*"
+        element={
+          <ProtectedRoute requiredRole="professor">
+            <ProfessorDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            {user?.role === 'professor' ? (
+              <Navigate to="/professor" replace />
+            ) : (
+              <StudentDashboard />
+            )}
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
 
-export default App;
+const App = () => {
+  return (
+    <AuthProvider>
+      <ToastProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </ToastProvider>
+    </AuthProvider>
+  )
+}
+
+export default App
